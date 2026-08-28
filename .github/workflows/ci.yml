@@ -1,0 +1,35 @@
+# curvez:bootstrap 이 만들었다. 게이트 명령은 .curvez/profile.json 의 commands 가 정본이다 —
+# 명령을 바꿀 때 이 파일만 고치면 로컬 게이트와 갈라진다. profile.json 을 함께 고쳐라.
+name: ci
+
+on:
+  pull_request:
+    branches: [release, main]
+  push:
+    branches: [release, main]
+
+# 같은 브랜치에 새 커밋이 오면 앞선 실행을 취소한다. 낡은 결과를 기다리지 않는다.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # --frozen-lockfile: lockfile 과 package.json 이 어긋나면 조용히 맞추지 말고 실패한다.
+      - run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm lint
+      - name: build
+        run: pnpm build
