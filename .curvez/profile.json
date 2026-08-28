@@ -1,0 +1,19 @@
+{
+  "stack": "nextjs",
+  "packageManager": "pnpm",
+  "architecture": "ddd",
+  "paths": {
+    "web": "."
+  },
+  "git": {
+    "baseBranch": "release",
+    "releaseBranch": "main",
+    "mergeStrategy": "rebase",
+    "protectedBranches": ["main", "release"],
+    "humanMergeTargets": ["main"]
+  },
+  "commands": {
+    "lint": "pnpm lint",
+    "build": "pnpm build"
+  }
+}
