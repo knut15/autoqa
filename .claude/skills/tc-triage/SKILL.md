@@ -108,6 +108,11 @@ js JSON.stringify({y: window.scrollY, h: document.body.scrollHeight})
 
 이것들은 `manual` 로 남기고 리포트에 이유와 함께 드러낸다.
 
+**`manual` 은 "확인하지 마라" 가 아니다.** 특히 첫 항목이 헷갈린다 — 좋아요를 누르는 TC 를
+자동화하지 않는 이유는 러너가 **매 회차 반복해서** 지표를 부풀리기 때문이고, QA 가 손으로
+한 번 확인하는 것은 정상이다. 그 판정은 `verdicts.json` 에 `by: "human"` 으로 남는다.
+서버 로그에 그 흔적이 보인다고 규칙 위반으로 단정하지 말고 `verdicts.json` 을 먼저 열어라.
+
 ## 마치면
 
 1. `pnpm autoqa run --project <경로>` 로 실제 실행해 수치를 낸다
