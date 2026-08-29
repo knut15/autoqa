@@ -6,3 +6,6 @@ next-env.d.ts
 .omc
 # next dev 가 자동 재생성하는 파일 — 포맷하면 uncommitted diff 가 계속 생긴다
 AGENTS.md
+
+# quality-gate 가 파싱하는 표다. 정렬하면 셀에 공백이 붙어 규칙이 스킵된다
+.curvez/
