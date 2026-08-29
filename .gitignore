@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .curvez/tmp/
+
+# oh-my-claudecode 세션·상태 데이터
+.omc/
