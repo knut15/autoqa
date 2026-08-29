@@ -47,14 +47,14 @@ const STATUS_TOKENS: {
     token: "--status-running",
     light: "#2a78d6",
     dark: "#3987e5",
-    usage: "실행 중. 채운 원 + 펄스.",
+    usage: "실행 중. 채운 원 + 링 + 펄스.",
   },
   {
     status: "skipped",
     token: "--status-skipped",
-    light: "#898781",
-    dark: "#898781",
-    usage: "건너뜀. 회색 원.",
+    light: "#b07d0a",
+    dark: "#e5a72c",
+    usage: "보류. 노란 원.",
   },
   {
     status: "pending",
@@ -95,8 +95,9 @@ export default function DesignSystemPage() {
             (validator 측정값).
           </li>
           <li>
-            TC ID·수치·시간·환경명은 <span className="font-mono">Geist Mono</span>
-            , 나머지 UI 텍스트는 IBM Plex Sans KR 을 쓴다.
+            TC ID·수치·시간·환경명은{" "}
+            <span className="font-mono">Geist Mono</span>, 나머지 UI 텍스트는
+            IBM Plex Sans KR 을 쓴다.
           </li>
           <li>
             유채색은 상태 표시에만 쓴다. 크롬(배경·테두리·버튼)은 무채색을
