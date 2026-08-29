@@ -4,8 +4,13 @@ import { BarChart3, LayoutDashboard, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ProjectTree } from "@/components/qa/project-tree";
+import { readSettings } from "@/lib/settings";
 
 export function AppSidebar() {
+  const settings = readSettings();
+  const projects = settings.projects ?? [];
+
   return (
     <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
       <div className="flex items-center gap-2.5 px-5 pt-6 pb-4">
@@ -27,6 +32,7 @@ export function AppSidebar() {
           <LayoutDashboard className="size-4" />
           대시보드
         </Link>
+        <ProjectTree projects={projects} current={settings.projectDir} />
         <div
           aria-disabled="true"
           className="flex cursor-not-allowed items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground/70"
@@ -44,13 +50,12 @@ export function AppSidebar() {
       <div className="mt-auto flex flex-col gap-3 px-3 pb-4">
         <Separator />
         <div className="flex items-center justify-between">
-          <div
-            aria-disabled="true"
-            className="flex cursor-not-allowed items-center gap-2.5 px-2 py-1.5 text-sm text-muted-foreground/70"
+          <Link
+            href="/settings"
+            className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent"
           >
-            <Settings className="size-4" />
-            셋팅
-          </div>
+            <Settings className="size-4" />앱 설정
+          </Link>
           <ThemeToggle />
         </div>
         <Link

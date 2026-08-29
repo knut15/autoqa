@@ -75,7 +75,7 @@
   --status-pass: #0ca30c;
   --status-fail: #d03b3b;
   --status-running: #2a78d6;
-  --status-skipped: #898781;
+  --status-skipped: #b07d0a;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -114,7 +114,7 @@
   --status-pass: #0ca30c;
   --status-fail: #d03b3b;
   --status-running: #3987e5;
-  --status-skipped: #898781;
+  --status-skipped: #e5a72c;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
