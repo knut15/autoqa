@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { FolderSearch } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
+import { FolderPicker } from "@/components/qa/folder-picker";
 import {
   Card,
   CardContent,
@@ -50,15 +49,20 @@ export function ProjectSetup({
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
 
+  // 자동 탐색이 같은 경로를 반복해서 두드리지 않게 마지막으로 훑은 값을 기억한다.
+  const lastLooked = React.useRef(seed ? initialDir.trim() : "");
+
   const look = React.useCallback(async (target: string) => {
-    if (!target.trim()) return;
+    const value = target.trim();
+    if (!value) return;
+    lastLooked.current = value;
     setLooking(true);
     setError(null);
     try {
       const response = await fetch("/api/project/inspect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dir: target }),
+        body: JSON.stringify({ dir: value }),
       });
       const result = (await response.json()) as Inspection;
       setFound(result);
@@ -77,6 +81,14 @@ export function ProjectSetup({
       setLooking(false);
     }
   }, []);
+
+  // 경로만 넣고 멈추면 나머지 칸이 영영 안 뜬다 — 버튼을 몰라도 되게 스스로 훑는다.
+  React.useEffect(() => {
+    const value = dir.trim();
+    if (!value || value === lastLooked.current) return;
+    const timer = setTimeout(() => void look(value), 600);
+    return () => clearTimeout(timer);
+  }, [dir, look]);
 
   async function save() {
     setSaving(true);
@@ -117,7 +129,11 @@ export function ProjectSetup({
       <CardContent className="flex flex-col gap-5">
         <Field
           label="프로젝트 경로"
-          hint="검증할 리포의 절대 경로. 예: /Users/me/work/my-app"
+          hint={
+            looking
+              ? "훑는 중…"
+              : "경로를 넣거나 폴더 열기로 고르면 나머지는 알아서 채운다."
+          }
         >
           <div className="flex gap-2">
             <Input
@@ -130,15 +146,7 @@ export function ProjectSetup({
               placeholder="/path/to/repo"
               aria-label="프로젝트 경로"
             />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void look(dir)}
-              disabled={looking || !dir.trim()}
-            >
-              <FolderSearch className="size-4" />
-              {looking ? "찾는 중" : "찾기"}
-            </Button>
+            <FolderPicker value={dir} onPick={setDir} />
           </div>
         </Field>
 
