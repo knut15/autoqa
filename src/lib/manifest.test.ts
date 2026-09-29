@@ -2,7 +2,7 @@
 // 거부하는지가 바뀌면 사용자가 보는 에러 메시지와 허용 범위가 조용히 바뀐다.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -11,6 +11,8 @@ import {
   MANIFEST_FILENAME,
   parseManifest,
   readManifest,
+  readRawManifest,
+  writeManifest,
 } from "@/lib/manifest";
 
 test("MANIFEST_FILENAME 은 .autoqa.json 이다 — 대상 프로젝트가 찾는 파일명이 바뀌면 안내 문구와 어긋난다", () => {
@@ -165,6 +167,52 @@ test("readManifest: 유효한 .autoqa.json 을 실제로 읽어 project 를 돌�
     );
     const manifest = await readManifest(dir);
     assert.equal(manifest.project, "회귀테스트");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("readRawManifest: .autoqa.json 이 없으면 null 을 돌려준다 — 등록 화면이 새 프로젝트를 병합할 때 던지면 안 된다", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "autoqa-manifest-"));
+  try {
+    assert.equal(await readRawManifest(dir), null);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("readRawManifest: 올바른 JSON 이 아니면 검증하지 않고 null 을 돌려준다", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "autoqa-manifest-"));
+  try {
+    await writeFile(path.join(dir, MANIFEST_FILENAME), "{ not json", "utf8");
+    assert.equal(await readRawManifest(dir), null);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("readRawManifest: 필수 필드가 빠져도 검증 없이 원문 그대로 돌려준다", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "autoqa-manifest-"));
+  try {
+    await writeFile(
+      path.join(dir, MANIFEST_FILENAME),
+      JSON.stringify({ columns: { id: "번호" } }),
+      "utf8",
+    );
+    const raw = await readRawManifest(dir);
+    assert.deepEqual(raw, { columns: { id: "번호" } });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("writeManifest: 들여쓰기 2칸과 끝 줄바꿈을 붙여 .autoqa.json 에 쓰고 그 경로를 돌려준다", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "autoqa-manifest-"));
+  try {
+    const file = await writeManifest(dir, { project: "demo" });
+    assert.equal(file, path.join(dir, MANIFEST_FILENAME));
+    const written = await readFile(file, "utf8");
+    assert.equal(written, `${JSON.stringify({ project: "demo" }, null, 2)}\n`);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

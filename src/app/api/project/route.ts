@@ -1,10 +1,10 @@
 // 프로젝트 등록·전환. QA 가 .autoqa.json 을 손으로 쓰지 않게 대신 만든다.
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 
 import { inspectProject } from "@/lib/inspect";
-import { MANIFEST_FILENAME } from "@/lib/manifest";
+import { readRawManifest, writeManifest } from "@/lib/manifest";
 import { projectDir } from "@/lib/project";
 import { rememberProject } from "@/lib/settings";
 
@@ -35,10 +35,9 @@ export async function POST(request: Request) {
   if (!found.ok) return bad(found.error ?? "프로젝트를 읽지 못했다.");
 
   const resolved = path.resolve(dir);
-  const manifestPath = path.join(resolved, MANIFEST_FILENAME);
 
   // 손으로 적은 columns·priorities 를 등록 화면이 지우면 안 된다. 있는 값 위에 얹는다.
-  const existing = await readJson(manifestPath);
+  const existing = await readRawManifest(resolved);
   const sources = Array.isArray(existing?.sources) ? [...existing.sources] : [];
   const first = (sources[0] ?? { adapter: "markdown" }) as Record<
     string,
@@ -68,11 +67,7 @@ export async function POST(request: Request) {
     return bad(`${file} 을 읽지 못했다. 경로를 확인해라.`);
   }
 
-  await writeFile(
-    manifestPath,
-    `${JSON.stringify(manifest, null, 2)}\n`,
-    "utf8",
-  );
+  const manifestPath = await writeManifest(resolved, manifest);
   await rememberProject(resolved, project);
 
   return NextResponse.json({ dir: resolved, manifest: manifestPath });
@@ -80,12 +75,4 @@ export async function POST(request: Request) {
 
 function bad(error: string) {
   return NextResponse.json({ error }, { status: 400 });
-}
-
-async function readJson(file: string): Promise<Record<string, unknown> | null> {
-  try {
-    return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
 }
