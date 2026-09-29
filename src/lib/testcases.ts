@@ -24,14 +24,19 @@ export interface TestCase {
   mode?: string;
 }
 
-export function summarize(cases: TestCase[]) {
-  const counts: Record<TcStatus, number> = {
+/** TcStatus 5종을 0으로 초기화한 카운터. 러너·스토어·화면이 같은 모양으로 집계하게 한다. */
+export function emptyCounts(): Record<TcStatus, number> {
+  return {
     pass: 0,
     fail: 0,
     running: 0,
     pending: 0,
     skipped: 0,
   };
+}
+
+export function summarize(cases: TestCase[]) {
+  const counts = emptyCounts();
   for (const tc of cases) counts[tc.status] += 1;
   return {
     counts,

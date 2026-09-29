@@ -5,9 +5,7 @@ import { projectDir } from "@/lib/project";
 import { clearProgress, readProgress } from "@/lib/runner/progress";
 import { runAll, writeRun } from "@/lib/runner/run";
 import { toMarkdown } from "@/lib/runner/report";
-import { autoqaDir } from "@/lib/runner/store";
-import { writeFile } from "node:fs/promises";
-import path from "node:path";
+import { writeReport } from "@/lib/runner/store";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +32,7 @@ export async function POST() {
   void runAll({ dir, log: () => {} })
     .then(async (run) => {
       await writeRun(dir, run);
-      await writeFile(
-        path.join(autoqaDir(dir), "report.md"),
-        toMarkdown(run),
-        "utf8",
-      );
+      await writeReport(dir, toMarkdown(run));
     })
     .catch(() => {
       // 실패는 progress 의 phase 로 이미 남았다.

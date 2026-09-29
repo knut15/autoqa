@@ -1,12 +1,9 @@
 #!/usr/bin/env tsx
 // 대상 리포에서 실행한다: pnpm autoqa run
-import { writeFile } from "node:fs/promises";
-import path from "node:path";
-
 import { projectDir } from "@/lib/project";
 import { exitCode, toConsole, toMarkdown } from "@/lib/runner/report";
 import { runAll, writeRun } from "@/lib/runner/run";
-import { autoqaDir } from "@/lib/runner/store";
+import { writeReport } from "@/lib/runner/store";
 
 const USAGE = `사용법:
   autoqa run [옵션]
@@ -37,8 +34,7 @@ async function main(): Promise<number> {
   });
 
   const runFile = await writeRun(dir, run);
-  const reportFile = path.join(autoqaDir(dir), "report.md");
-  await writeFile(reportFile, toMarkdown(run), "utf8");
+  const reportFile = await writeReport(dir, toMarkdown(run));
 
   process.stdout.write(`${toConsole(run)}\n\n`);
   process.stdout.write(`결과: ${runFile}\n리포트: ${reportFile}\n`);
