@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppShell } from "@/components/app-shell";
 import { LiveBoard } from "@/components/qa/live-board";
 import { ProjectSetup } from "@/components/qa/project-setup";
 import { Badge } from "@/components/ui/badge";
@@ -27,21 +27,17 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-1">
-      <AppSidebar />
-      <main className="min-w-0 flex-1 space-y-4 p-4 md:p-6">
-        <div className="font-heading font-semibold md:hidden">AutoQA</div>
-        {project ? <Board project={project} /> : null}
-        {failure ? (
-          <>
-            <ProjectSetup initialDir={registered ?? ""} />
-            <p className="px-1 font-mono text-xs text-muted-foreground">
-              {projectDir()} — {failure}
-            </p>
-          </>
-        ) : null}
-      </main>
-    </div>
+    <AppShell>
+      {project ? <Board project={project} /> : null}
+      {failure ? (
+        <>
+          <ProjectSetup initialDir={registered ?? ""} />
+          <p className="px-1 font-mono text-xs text-muted-foreground">
+            {projectDir()} — {failure}
+          </p>
+        </>
+      ) : null}
+    </AppShell>
   );
 }
 

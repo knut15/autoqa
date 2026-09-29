@@ -5,18 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { RunBoard } from "@/components/qa/run-board";
 import { RunControl } from "@/components/qa/run-control";
+import { isBusy } from "@/components/qa/progress-state";
 import type { Progress } from "@/lib/runner/progress";
 import type { TestCase } from "@/lib/testcases";
 
 const POLL_MS = 1000;
-
-export function isBusy(progress: Progress | null): boolean {
-  return (
-    progress !== null &&
-    progress.phase !== "done" &&
-    progress.phase !== "failed"
-  );
-}
 
 /**
  * 실행 중에도 결과가 하나씩 보여야 한다.
