@@ -1,7 +1,7 @@
 // 계획 → 실행 → 판정을 한 줄로 잇는다. Node 런타임 전용이다.
 import type { ChildProcess } from "node:child_process";
 
-import { loadProject } from "@/lib/project";
+import type { Progress } from "@/lib/api-types";
 import type { TcStatus, TestCase } from "@/lib/testcases";
 import {
   isServing,
@@ -15,14 +15,18 @@ import { judgeByModel } from "@/lib/runner/judge-model";
 import { judgeByRule, notJudged } from "@/lib/runner/judge";
 import { tcHash } from "@/lib/runner/hash";
 import { makePlans } from "@/lib/runner/plan";
-import { writeProgress, type Progress } from "@/lib/runner/progress";
+import { writeProgress } from "@/lib/runner/progress";
 import { readPlans, tally, writePlans, writeRun } from "@/lib/runner/store";
-import type { CaseResult, Plan, RunResult } from "@/lib/runner/types";
+import type {
+  CaseResult,
+  Plan,
+  RunResult,
+  RunTarget,
+} from "@/lib/runner/types";
 
 const READY_TIMEOUT_MS = 90 * 1000;
 
 export interface RunOptions {
-  dir: string;
   /** 이 접두어로 시작하는 TC 만 돌린다. 예: "TC-RTE" */
   only?: string;
   /** 계획만 세우고 실행하지 않는다. */
@@ -31,12 +35,14 @@ export interface RunOptions {
   log?: (line: string) => void;
 }
 
-export async function runAll(options: RunOptions): Promise<RunResult> {
+export async function runAll(
+  target: RunTarget,
+  options: RunOptions = {},
+): Promise<RunResult> {
   const log = options.log ?? (() => {});
-  const project = await loadProject();
   const cases = options.only
-    ? project.cases.filter((tc) => tc.id.startsWith(options.only!))
-    : project.cases;
+    ? target.cases.filter((tc) => tc.id.startsWith(options.only!))
+    : target.cases;
 
   if (cases.length === 0) {
     throw new Error(
@@ -47,14 +53,14 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
   }
 
   const startedAt = new Date().toISOString();
-  const app = project.manifest.app ?? null;
+  const app = target.manifest.app ?? null;
   const baseUrl = app?.baseUrl ?? null;
 
   // 화면이 폴링할 수 있게 진행 상태를 파일로 남긴다.
   // 판정이 끝난 TC 를 쌓아 화면이 진행 중에도 도트를 켤 수 있게 한다.
   const done: Record<string, TcStatus> = {};
   const report = async (patch: Partial<Progress>) => {
-    await writeProgress(options.dir, {
+    await writeProgress(target.dir, {
       startedAt,
       phase: "running",
       current: 0,
@@ -68,9 +74,9 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
   await report({ phase: "planning", message: "계획을 확인하는 중" });
 
   const plans = await ensurePlans(
-    options.dir,
+    target.dir,
     cases,
-    project.plans,
+    target.plans,
     baseUrl,
     log,
   );
@@ -78,8 +84,8 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
 
   if (options.planOnly) {
     return summarize(
-      project.manifest.project,
-      project.manifest.priorities,
+      target.manifest.project,
+      target.manifest.priorities,
       startedAt,
       baseUrl,
       cases.map((tc) => planOnlyResult(tc, planById.get(tc.id))),
@@ -119,7 +125,7 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
           }`,
         });
         server = await startApp(
-          options.dir,
+          target.dir,
           app.start,
           app.baseUrl,
           app.env ?? {},
@@ -142,7 +148,7 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
         message: `${tc.id} — ${plan?.mode ?? "자동 실행 대상 아님"}`,
       });
       const result = await runOne(tc, plan, {
-        dir: options.dir,
+        dir: target.dir,
         baseUrl: app ? app.baseUrl : null,
         env: app?.env,
       });
@@ -156,8 +162,8 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
       });
     }
     const result = summarize(
-      project.manifest.project,
-      project.manifest.priorities,
+      target.manifest.project,
+      target.manifest.priorities,
       startedAt,
       baseUrl,
       results,

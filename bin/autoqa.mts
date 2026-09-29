@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 // 대상 리포에서 실행한다: pnpm autoqa run
-import { projectDir } from "@/lib/project";
+import { loadProject } from "@/lib/project";
 import { exitCode, toConsole, toMarkdown } from "@/lib/runner/report";
 import { runAll, writeRun } from "@/lib/runner/run";
 import { writeReport } from "@/lib/runner/store";
@@ -25,16 +25,15 @@ async function main(): Promise<number> {
   const projectOverride = value(argv, "--project");
   if (projectOverride) process.env.AUTOQA_PROJECT = projectOverride;
 
-  const dir = projectDir();
-  const run = await runAll({
-    dir,
+  const target = await loadProject();
+  const run = await runAll(target, {
     only,
     planOnly: argv.includes("--plan-only"),
     log: (line) => process.stderr.write(`${line}\n`),
   });
 
-  const runFile = await writeRun(dir, run);
-  const reportFile = await writeReport(dir, toMarkdown(run));
+  const runFile = await writeRun(target.dir, run);
+  const reportFile = await writeReport(target.dir, toMarkdown(run));
 
   process.stdout.write(`${toConsole(run)}\n\n`);
   process.stdout.write(`결과: ${runFile}\n리포트: ${reportFile}\n`);

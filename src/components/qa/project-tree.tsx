@@ -6,7 +6,7 @@ import { Check, FolderGit2, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
-import type { RegisteredProject } from "@/lib/settings";
+import type { RegisteredProject } from "@/lib/api-types";
 
 /** 대시보드 아래에 등록한 프로젝트를 늘어놓는다. 누르면 그 프로젝트로 갈아탄다. */
 export function ProjectTree({

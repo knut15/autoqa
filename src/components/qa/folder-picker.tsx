@@ -5,7 +5,7 @@ import { ChevronUp, Folder, FolderGit2, FolderOpen, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Listing } from "@/lib/browse";
+import type { Listing } from "@/lib/api-types";
 
 /**
  * 폴더를 타고 다니며 리포를 고른다.

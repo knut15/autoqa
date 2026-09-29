@@ -1,4 +1,4 @@
-import type { Progress } from "@/lib/runner/progress";
+import type { Progress } from "@/lib/api-types";
 
 export function isBusy(progress: Progress | null): boolean {
   return (

@@ -4,24 +4,10 @@ import { readdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
+import type { Entry, Listing } from "@/lib/api-types";
+
 /** 이것이 있으면 리포로 본다. 목록에서 먼저 눈에 띄게 하려는 것뿐이라 느슨해도 된다. */
 const REPO_MARKS = [".git", "package.json", ".autoqa.json"];
-
-export interface Entry {
-  name: string;
-  /** 리포처럼 보이는 폴더. 목록에서 표시해 고르기 쉽게 한다. */
-  repo: boolean;
-}
-
-export interface Listing {
-  ok: boolean;
-  error?: string;
-  /** 지금 보고 있는 폴더의 절대 경로. */
-  dir: string;
-  /** 상위 폴더. 루트면 null. */
-  parent: string | null;
-  entries: Entry[];
-}
 
 /** 시작 위치. 입력 칸이 비어 있을 때 홈에서 출발한다. */
 export function startDir(): string {

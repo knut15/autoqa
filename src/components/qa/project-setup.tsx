@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { Inspection } from "@/lib/inspect";
+import type { Inspection } from "@/lib/api-types";
 
 interface Props {
   /** 이미 보고 있는 프로젝트가 있으면 그 경로로 시작한다. */

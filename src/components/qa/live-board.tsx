@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { RunBoard } from "@/components/qa/run-board";
 import { RunControl } from "@/components/qa/run-control";
 import { isBusy } from "@/components/qa/progress-state";
-import type { Progress } from "@/lib/runner/progress";
+import type { Progress } from "@/lib/api-types";
 import type { TestCase } from "@/lib/testcases";
 
 const POLL_MS = 1000;
