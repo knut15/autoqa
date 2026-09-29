@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Check, FolderGit2, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -17,7 +17,11 @@ export function ProjectTree({
   current?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [switching, setSwitching] = React.useState<string | null>(null);
+  // 등록 화면에서는 아직 어느 프로젝트도 고른 것이 아니다 — 체크를 프로젝트에 두면
+  // 지금 그것을 보고 있다는 뜻이 되어 화면과 어긋난다.
+  const adding = pathname === "/setup";
 
   async function go(dir: string) {
     if (dir === current) return;
@@ -40,7 +44,7 @@ export function ProjectTree({
   return (
     <div className="flex flex-col gap-0.5 pt-0.5">
       {projects.map((project) => {
-        const active = project.dir === current;
+        const active = !adding && project.dir === current;
         return (
           <button
             key={project.dir}
@@ -67,7 +71,14 @@ export function ProjectTree({
 
       <Link
         href="/setup"
-        className="relative ml-4 flex items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-[13px] text-muted-foreground/70 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:bg-border hover:bg-sidebar-accent/50"
+        aria-current={adding ? "page" : undefined}
+        className={cn(
+          "relative ml-4 flex items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-[13px]",
+          "before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px before:bg-border",
+          adding
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground/70 hover:bg-sidebar-accent/50",
+        )}
       >
         <Plus className="size-3.5 shrink-0" />
         프로젝트 추가
