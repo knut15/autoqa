@@ -135,7 +135,7 @@ test("parseManifest: 최상위가 객체가 아니면 거부한다 — 배열이
   assert.throws(() => parseManifest([], "test"), /최상위/);
 });
 
-test("readManifest: 존재하지 않는 프로젝트 디렉터리면 파일 경로를 담은 에러를 낸다", async () => {
+test("readManifest: .autoqa.json 이 없으면 파일 경로를 담은 에러를 낸다", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "autoqa-manifest-"));
   try {
     await assert.rejects(readManifest(dir), /\.autoqa\.json/);

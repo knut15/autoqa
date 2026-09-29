@@ -15,6 +15,7 @@ import {
   readPlans,
   saveHumanVerdict,
   writePlans,
+  writeReport,
   writeRun,
   type HumanVerdict,
 } from "@/lib/runner/store";
@@ -156,6 +157,17 @@ test("writeRun: startedAt 의 콜론·마침표를 -로 바꾼 파일명으로 r
     );
     const raw = await readFile(file, "utf8");
     assert.equal(JSON.parse(raw).project, "demo");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("writeReport: .autoqa/report.md 에 내용을 그대로 쓰고 그 경로를 돌려준다 — CLI 가 이 경로를 사용자에게 안내한다", async () => {
+  const dir = await tmp();
+  try {
+    const file = await writeReport(dir, "# 리포트\n");
+    assert.equal(file, path.join(autoqaDir(dir), "report.md"));
+    assert.equal(await readFile(file, "utf8"), "# 리포트\n");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
