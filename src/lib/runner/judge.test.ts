@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { hasRules, judgeByRule, notJudged } from "@/lib/runner/judge";
+import { judgeByRule, notJudged } from "@/lib/runner/judge";
 import type { Evidence, Expect, Plan } from "@/lib/runner/types";
 
 function plan(expect?: Expect): Plan {
@@ -170,10 +170,4 @@ test("notJudged: 항상 pending 상태이고 by 는 runner — pending 은 아�
   assert.equal(verdict.status, "pending");
   assert.equal(verdict.by, "runner");
   assert.equal(verdict.reason, "실행 칸이 비어 있다");
-});
-
-test("hasRules: expect 가 undefined 이거나 빈 객체면 false, 조건이 하나라도 있으면 true", () => {
-  assert.equal(hasRules(undefined), false);
-  assert.equal(hasRules({}), false);
-  assert.equal(hasRules({ exitCode: 0 }), true);
 });
