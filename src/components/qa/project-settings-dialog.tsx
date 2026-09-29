@@ -5,7 +5,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProjectSetup } from "@/components/qa/project-setup";
-import type { Inspection } from "@/lib/inspect";
+import type { Inspection } from "@/lib/api-types";
 
 /**
  * 이 프로젝트의 설정을 모달로 연다.

@@ -1,4 +1,5 @@
-import type { TcStatus } from "@/lib/testcases";
+import type { Manifest } from "@/lib/manifest";
+import type { TcStatus, TestCase } from "@/lib/testcases";
 
 /**
  * TC 를 무엇으로 실행할지.
@@ -105,4 +106,18 @@ export interface RunResult {
   baseUrl: string | null;
   counts: Record<TcStatus, number>;
   results: CaseResult[];
+}
+
+/**
+ * `runAll` 이 실행할 대상. 엔진은 이걸 스스로 로드하지 않는다 — 호출자(bin/autoqa.mts,
+ * src/app/api/run/route.ts)가 `lib/project` 의 `loadProject()` 로 만들어 넘긴다.
+ * `lib/project` 의 `Project` 타입과 필드가 같아 그대로 넘길 수 있다.
+ */
+export interface RunTarget {
+  /** 검증 대상 리포의 절대 경로. */
+  dir: string;
+  manifest: Manifest;
+  cases: TestCase[];
+  /** 문서의 실행 칸에서 바로 나온 계획. 모델을 부르지 않고 실행할 수 있다. */
+  plans: Plan[];
 }

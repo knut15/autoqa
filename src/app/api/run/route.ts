@@ -1,13 +1,11 @@
 // 화면의 "검증 시작" 버튼이 부른다. 실행은 오래 걸리므로 시작만 하고 바로 응답한다.
 import { NextResponse } from "next/server";
 
-import { projectDir } from "@/lib/project";
+import { loadProject, projectDir } from "@/lib/project";
 import { clearProgress, readProgress } from "@/lib/runner/progress";
 import { runAll, writeRun } from "@/lib/runner/run";
 import { toMarkdown } from "@/lib/runner/report";
-import { autoqaDir } from "@/lib/runner/store";
-import { writeFile } from "node:fs/promises";
-import path from "node:path";
+import { writeReport } from "@/lib/runner/store";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +29,13 @@ export async function POST() {
   await clearProgress(dir);
 
   // 응답을 기다리게 하지 않는다. 화면은 GET 으로 진행을 따라간다.
-  void runAll({ dir, log: () => {} })
+  // loadProject() 도 이 안에서 부른다 — 실패해도 지금과 같이 조용히 삼켜지고,
+  // progress 는 clearProgress() 가 남긴 상태(없음) 그대로 남는다.
+  void loadProject()
+    .then((target) => runAll(target, { log: () => {} }))
     .then(async (run) => {
       await writeRun(dir, run);
-      await writeFile(
-        path.join(autoqaDir(dir), "report.md"),
-        toMarkdown(run),
-        "utf8",
-      );
+      await writeReport(dir, toMarkdown(run));
     })
     .catch(() => {
       // 실패는 progress 의 phase 로 이미 남았다.

@@ -5,11 +5,7 @@ import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-/** 한 번 등록한 프로젝트. 경로만 두면 사이드바에 무엇인지 안 보인다. */
-export interface RegisteredProject {
-  dir: string;
-  name: string;
-}
+import type { RegisteredProject } from "@/lib/api-types";
 
 export interface Settings {
   /** 지금 대시보드가 보고 있는 리포의 절대 경로. */

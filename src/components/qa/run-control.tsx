@@ -3,9 +3,9 @@
 import { Play, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { isBusy } from "@/components/qa/live-board";
+import { isBusy } from "@/components/qa/progress-state";
 import { ProjectSettingsDialog } from "@/components/qa/project-settings-dialog";
-import type { Progress } from "@/lib/runner/progress";
+import type { Progress } from "@/lib/api-types";
 
 const PHASE_LABEL: Record<Progress["phase"], string> = {
   planning: "계획 확인 중",

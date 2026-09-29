@@ -2,13 +2,15 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { Plan, RunResult } from "@/lib/runner/types";
+import { emptyCounts } from "@/lib/testcases";
+import type { CaseResult, Plan, RunResult } from "@/lib/runner/types";
 
 const DIR = ".autoqa";
 const PLANS = "plans.json";
 const VERDICTS = "verdicts.json";
 const LATEST = "latest.json";
 const RUNS = "runs";
+const REPORT = "report.md";
 
 export function autoqaDir(projectDir: string): string {
   return path.join(projectDir, DIR);
@@ -71,6 +73,17 @@ export async function writeRun(
   const file = path.join(dir, `${stamp}.json`);
   await writeFile(file, body, "utf8");
   await writeFile(path.join(autoqaDir(projectDir), LATEST), body, "utf8");
+  return file;
+}
+
+/** 리포트를 .autoqa/report.md 로 남긴다. CLI 와 API 라우트가 같은 경로·내용으로 쓰게 한다. */
+export async function writeReport(
+  projectDir: string,
+  content: string,
+): Promise<string> {
+  const dir = await ensureAutoqaDir(projectDir);
+  const file = path.join(dir, REPORT);
+  await writeFile(file, content, "utf8");
   return file;
 }
 
@@ -143,19 +156,14 @@ export function applyHumanVerdicts(
       at: human.at,
     };
   }
-  run.counts = tally(run);
+  run.counts = tally(run.results);
   return run;
 }
 
-function tally(run: RunResult): RunResult["counts"] {
-  const counts: RunResult["counts"] = {
-    pass: 0,
-    fail: 0,
-    running: 0,
-    pending: 0,
-    skipped: 0,
-  };
-  for (const result of run.results) counts[result.verdict.status] += 1;
+/** CaseResult 목록에서 TcStatus 5종을 센다. run.ts 의 실행 직후 집계도 이것을 쓴다. */
+export function tally(results: CaseResult[]): RunResult["counts"] {
+  const counts = emptyCounts();
+  for (const result of results) counts[result.verdict.status] += 1;
   return counts;
 }
 
@@ -181,7 +189,7 @@ export async function saveHumanVerdict(
     at: new Date().toISOString(),
   };
   target.verdict = { ...human, by: "human" };
-  run.counts = tally(run);
+  run.counts = tally(run.results);
 
   // 실행 결과와 따로 남긴다. 다음 회차가 latest.json 을 덮어써도 살아남아야 한다.
   const verdicts = await readHumanVerdicts(projectDir);

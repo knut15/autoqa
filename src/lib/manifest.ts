@@ -1,5 +1,5 @@
 // 대상 프로젝트의 파일을 읽으므로 Node 런타임 전용이다. 클라이언트 컴포넌트에서 import 하지 않는다.
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /** 표 헤더의 칸 이름. 기본값은 한글이고, 다른 말로 쓴 문서는 여기서 이름을 바꾼다. */
@@ -101,6 +101,34 @@ export async function readManifest(projectDir: string): Promise<Manifest> {
     throw new Error(`${file} 이 올바른 JSON 이 아니다: ${String(error)}`);
   }
   return parseManifest(parsed, file);
+}
+
+/**
+ * 검증 없이 원문 그대로 읽는다. 파일이 없거나 JSON 이 아니면 null.
+ * 등록 화면이 기존 값 위에 병합해 쓸 때 쓴다 — 형식이 안 맞아도 등록 자체는 막지 않는다.
+ */
+export async function readRawManifest(
+  projectDir: string,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const raw = await readFile(
+      path.join(projectDir, MANIFEST_FILENAME),
+      "utf8",
+    );
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/** 병합된 매니페스트를 검증 없이 그대로 쓴다. */
+export async function writeManifest(
+  projectDir: string,
+  manifest: Record<string, unknown>,
+): Promise<string> {
+  const file = path.join(projectDir, MANIFEST_FILENAME);
+  await writeFile(file, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  return file;
 }
 
 /** 손으로 쓰는 파일이라 어느 필드가 틀렸는지 짚어준다. */

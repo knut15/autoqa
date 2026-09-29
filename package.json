@@ -9,6 +9,7 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
     "autoqa": "tsx bin/autoqa.mts"
   },
   "dependencies": {

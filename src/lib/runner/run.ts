@@ -1,30 +1,32 @@
 // 계획 → 실행 → 판정을 한 줄로 잇는다. Node 런타임 전용이다.
-import { spawn, type ChildProcess } from "node:child_process";
-import { open, readFile } from "node:fs/promises";
-import path from "node:path";
+import type { ChildProcess } from "node:child_process";
 
-import { loadProject } from "@/lib/project";
+import type { Progress } from "@/lib/api-types";
 import type { TcStatus, TestCase } from "@/lib/testcases";
-import { cleanEnv, execute } from "@/lib/runner/execute";
+import {
+  isServing,
+  scripts,
+  startApp,
+  stopApp,
+  waitForApp,
+} from "@/lib/runner/app";
+import { execute } from "@/lib/runner/execute";
 import { judgeByModel } from "@/lib/runner/judge-model";
 import { judgeByRule, notJudged } from "@/lib/runner/judge";
 import { tcHash } from "@/lib/runner/hash";
 import { makePlans } from "@/lib/runner/plan";
-import { writeProgress, type Progress } from "@/lib/runner/progress";
-import {
-  autoqaDir,
-  ensureAutoqaDir,
-  readPlans,
-  writePlans,
-  writeRun,
-} from "@/lib/runner/store";
-import type { CaseResult, Plan, RunResult } from "@/lib/runner/types";
+import { writeProgress } from "@/lib/runner/progress";
+import { readPlans, tally, writePlans, writeRun } from "@/lib/runner/store";
+import type {
+  CaseResult,
+  Plan,
+  RunResult,
+  RunTarget,
+} from "@/lib/runner/types";
 
 const READY_TIMEOUT_MS = 90 * 1000;
-const READY_POLL_MS = 500;
 
 export interface RunOptions {
-  dir: string;
   /** 이 접두어로 시작하는 TC 만 돌린다. 예: "TC-RTE" */
   only?: string;
   /** 계획만 세우고 실행하지 않는다. */
@@ -33,12 +35,14 @@ export interface RunOptions {
   log?: (line: string) => void;
 }
 
-export async function runAll(options: RunOptions): Promise<RunResult> {
+export async function runAll(
+  target: RunTarget,
+  options: RunOptions = {},
+): Promise<RunResult> {
   const log = options.log ?? (() => {});
-  const project = await loadProject();
   const cases = options.only
-    ? project.cases.filter((tc) => tc.id.startsWith(options.only!))
-    : project.cases;
+    ? target.cases.filter((tc) => tc.id.startsWith(options.only!))
+    : target.cases;
 
   if (cases.length === 0) {
     throw new Error(
@@ -49,14 +53,14 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
   }
 
   const startedAt = new Date().toISOString();
-  const app = project.manifest.app ?? null;
+  const app = target.manifest.app ?? null;
   const baseUrl = app?.baseUrl ?? null;
 
   // 화면이 폴링할 수 있게 진행 상태를 파일로 남긴다.
   // 판정이 끝난 TC 를 쌓아 화면이 진행 중에도 도트를 켤 수 있게 한다.
   const done: Record<string, TcStatus> = {};
   const report = async (patch: Partial<Progress>) => {
-    await writeProgress(options.dir, {
+    await writeProgress(target.dir, {
       startedAt,
       phase: "running",
       current: 0,
@@ -70,9 +74,9 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
   await report({ phase: "planning", message: "계획을 확인하는 중" });
 
   const plans = await ensurePlans(
-    options.dir,
+    target.dir,
     cases,
-    project.plans,
+    target.plans,
     baseUrl,
     log,
   );
@@ -80,8 +84,8 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
 
   if (options.planOnly) {
     return summarize(
-      project.manifest.project,
-      project.manifest.priorities,
+      target.manifest.project,
+      target.manifest.priorities,
       startedAt,
       baseUrl,
       cases.map((tc) => planOnlyResult(tc, planById.get(tc.id))),
@@ -121,7 +125,7 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
           }`,
         });
         server = await startApp(
-          options.dir,
+          target.dir,
           app.start,
           app.baseUrl,
           app.env ?? {},
@@ -144,7 +148,7 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
         message: `${tc.id} — ${plan?.mode ?? "자동 실행 대상 아님"}`,
       });
       const result = await runOne(tc, plan, {
-        dir: options.dir,
+        dir: target.dir,
         baseUrl: app ? app.baseUrl : null,
         env: app?.env,
       });
@@ -158,8 +162,8 @@ export async function runAll(options: RunOptions): Promise<RunResult> {
       });
     }
     const result = summarize(
-      project.manifest.project,
-      project.manifest.priorities,
+      target.manifest.project,
+      target.manifest.priorities,
       startedAt,
       baseUrl,
       results,
@@ -348,81 +352,6 @@ async function ensurePlans(
   return [...byId.values()];
 }
 
-async function scripts(dir: string): Promise<string[]> {
-  try {
-    const raw = await readFile(path.join(dir, "package.json"), "utf8");
-    const parsed = JSON.parse(raw) as { scripts?: Record<string, string> };
-    return Object.keys(parsed.scripts ?? {}).map((name) => `pnpm ${name}`);
-  } catch {
-    return [];
-  }
-}
-
-async function startApp(
-  dir: string,
-  command: string,
-  baseUrl: string,
-  extraEnv: Record<string, string> = {},
-): Promise<ChildProcess> {
-  // 앱이 안 뜨면 이유가 남아야 한다. stdio 를 버리면 진단이 불가능하다.
-  await ensureAutoqaDir(dir);
-  const logFile = path.join(autoqaDir(dir), "app.log");
-  const log = await open(logFile, "w");
-
-  // autoqa 자신의 실행 환경을 걷어내고, 대상의 포트는 baseUrl 이 정한다.
-  const port = new URL(baseUrl).port;
-  const env = cleanEnv({ ...(port ? { PORT: port } : {}), ...extraEnv });
-
-  const child = spawn(command, {
-    cwd: dir,
-    shell: true,
-    env,
-    // 자식이 또 자식을 낳으므로(next dev) 그룹째 죽일 수 있게 분리한다.
-    detached: true,
-    stdio: ["ignore", log.fd, log.fd],
-  });
-  child.unref();
-  // spawn 이 fd 를 복제해 갔으므로 이쪽 핸들은 닫는다. 안 닫으면 GC 경고가 뜬다.
-  await log.close();
-  return child;
-}
-
-function stopApp(server: ChildProcess): void {
-  if (server.pid === undefined) return;
-  try {
-    process.kill(-server.pid, "SIGTERM");
-  } catch {
-    // 이미 죽었으면 그만이다.
-  }
-}
-
-/** 그 주소에 이미 무언가 응답하는가. */
-async function isServing(baseUrl: string): Promise<boolean> {
-  try {
-    await fetch(baseUrl, { signal: AbortSignal.timeout(2000) });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function waitForApp(baseUrl: string, timeoutMs: number): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let lastError = "응답 없음";
-  while (Date.now() < deadline) {
-    try {
-      await fetch(baseUrl, { signal: AbortSignal.timeout(READY_POLL_MS * 4) });
-      return;
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : String(error);
-      await new Promise((resolve) => setTimeout(resolve, READY_POLL_MS));
-    }
-  }
-  throw new Error(
-    `${timeoutMs}ms 안에 ${baseUrl} 이 응답하지 않았다. 마지막 오류: ${lastError}. 앱 로그는 .autoqa/app.log 에 있다.`,
-  );
-}
-
 function summarize(
   project: string,
   priorities: string[],
@@ -430,21 +359,13 @@ function summarize(
   baseUrl: string | null,
   results: CaseResult[],
 ): RunResult {
-  const counts: Record<TcStatus, number> = {
-    pass: 0,
-    fail: 0,
-    running: 0,
-    pending: 0,
-    skipped: 0,
-  };
-  for (const result of results) counts[result.verdict.status] += 1;
   return {
     project,
     priorities,
     startedAt,
     finishedAt: new Date().toISOString(),
     baseUrl,
-    counts,
+    counts: tally(results),
     results,
   };
 }

@@ -1,4 +1,4 @@
-import type { Evidence, Expect, Plan, Verdict } from "@/lib/runner/types";
+import type { Evidence, Plan, Verdict } from "@/lib/runner/types";
 
 /**
  * 코드가 답할 수 있는 것만 답한다. 조건이 없거나 브라우저 평가처럼 해석이 필요하면
@@ -119,9 +119,4 @@ function pathOf(target: string): string {
  */
 export function notJudged(reason: string): Verdict {
   return { status: "pending", reason, by: "runner" };
-}
-
-/** 판정 조건이 얼마나 붙어 있는지. 리포트에서 자동화 수준을 보여준다. */
-export function hasRules(expect: Expect | undefined): boolean {
-  return !!expect && Object.keys(expect).length > 0;
 }

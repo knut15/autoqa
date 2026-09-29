@@ -2,23 +2,13 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
+import type { Inspection } from "@/lib/api-types";
+import { readRawManifest } from "@/lib/manifest";
+
 /** TC 문서가 있을 만한 곳. 재귀 탐색 대신 흔한 자리만 본다 — 빠르고 예측 가능하다. */
 const DOC_DIRS = ["docs/qa", "docs", "qa", "tests/qa", "test/qa", "."];
 /** 표 헤더로 볼 만한 첫 칸 이름. 한글·영문 문서를 모두 집는다. */
 const TABLE_HEAD = /^\|\s*(ID|아이디)\s*\|/im;
-
-export interface Inspection {
-  ok: boolean;
-  /** 읽지 못했을 때의 이유. */
-  error?: string;
-  /** 이미 .autoqa.json 이 있으면 true — 등록이 아니라 수정이다. */
-  existing: boolean;
-  project: string;
-  /** TC 문서 후보. 첫 번째를 기본값으로 제안한다. */
-  docs: string[];
-  appStart: string;
-  appBaseUrl: string;
-}
 
 export async function inspectProject(dir: string): Promise<Inspection> {
   const empty: Inspection = {
@@ -41,7 +31,7 @@ export async function inspectProject(dir: string): Promise<Inspection> {
   }
 
   const pkg = await readJson(path.join(resolved, "package.json"));
-  const manifest = await readJson(path.join(resolved, ".autoqa.json"));
+  const manifest = await readRawManifest(resolved);
 
   const runner = packageRunner(pkg);
   const hasDev = !!(pkg?.scripts as Record<string, string> | undefined)?.dev;

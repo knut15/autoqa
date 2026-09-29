@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { RegisteredProject } from "@/lib/settings";
+import type { RegisteredProject } from "@/lib/api-types";
 
 /** autoqa 자체의 설정. 개별 프로젝트 설정은 대시보드의 설정 버튼에 있다. */
 export function AppSettings({
